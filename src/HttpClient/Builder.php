@@ -17,12 +17,9 @@ namespace Hintik\YouTube\HttpClient;
 use Http\Client\Common\HttpMethodsClient;
 use Http\Client\Common\HttpMethodsClientInterface;
 use Http\Client\Common\Plugin;
-use Http\Client\Common\Plugin\Cache\Generator\HeaderCacheKeyGenerator;
-use Http\Client\Common\Plugin\CachePlugin;
 use Http\Client\Common\PluginClientFactory;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Discovery\Psr18ClientDiscovery;
-use Psr\Cache\CacheItemPoolInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
@@ -42,7 +39,6 @@ final class Builder
     /** @var Plugin[] */
     private array $plugins = [];
 
-    private ?CachePlugin $cachePlugin = null;
     private ?HttpMethodsClientInterface $pluginClient = null;
 
     public function __construct(
@@ -60,13 +56,8 @@ final class Builder
     public function getHttpClient(): HttpMethodsClientInterface
     {
         if (null === $this->pluginClient) {
-            $plugins = $this->plugins;
-            if (null !== $this->cachePlugin) {
-                $plugins[] = $this->cachePlugin;
-            }
-
             $this->pluginClient = new HttpMethodsClient(
-                (new PluginClientFactory())->createClient($this->httpClient, $plugins),
+                (new PluginClientFactory())->createClient($this->httpClient, $this->plugins),
                 $this->requestFactory,
                 $this->streamFactory
             );
@@ -104,21 +95,5 @@ final class Builder
                 $this->pluginClient = null;
             }
         }
-    }
-
-    public function addCache(CacheItemPoolInterface $cachePool, array $config = []): void
-    {
-        if (!isset($config['cache_key_generator'])) {
-            $config['cache_key_generator'] = new HeaderCacheKeyGenerator(['Authorization', 'Cookie', 'Accept', 'Content-type']);
-        }
-
-        $this->cachePlugin = CachePlugin::clientCache($cachePool, $this->streamFactory, $config);
-        $this->pluginClient = null;
-    }
-
-    public function removeCache(): void
-    {
-        $this->cachePlugin = null;
-        $this->pluginClient = null;
     }
 }
