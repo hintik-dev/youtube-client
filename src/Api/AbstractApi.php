@@ -31,7 +31,9 @@ abstract class AbstractApi
 
     protected function getAsResponse(string $uri, array $params = [], array $headers = []): ResponseInterface
     {
-        $params['key'] = $this->client->getApiKey();
+        if ($this->client->getApiKey() !== null) {
+            $params['key'] = $this->client->getApiKey();
+        }
 
         return $this->client->getHttpClient()->get(self::prepareUri($uri, $params), $headers);
     }
