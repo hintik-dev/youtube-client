@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace Hintik\YouTube\Api;
 
 use DateTimeInterface;
+use Hintik\YouTube\Exception\RuntimeException;
 use Symfony\Component\OptionsResolver\Options;
 
 class Search extends AbstractApi
 {
-    public function list(array $parameters): mixed
+    public function list(array $parameters): array
     {
         $resolver = $this->createOptionsResolver();
 
-        $booleanNormalizer = fn(Options $resolver, $value): string => $value ? 'true' : 'false';
         $datetimeNormalizer = fn(Options $resolver, DateTimeInterface $value): string => $value->format('Y-m-d\TH:i:s\Z');
 
         $resolver->setDefined('part')
@@ -50,6 +50,12 @@ class Search extends AbstractApi
         $resolver->setDefined('videoDuration')
             ->setAllowedValues('videoDuration', ['any', 'long', 'medium', 'short']);
 
-        return $this->get('search', $resolver->resolve($parameters));
+        $response = $this->get('search', $resolver->resolve($parameters));
+
+        if (!is_array($response)) {
+            throw new RuntimeException('Unexpected response format from YouTube Search API.');
+        }
+
+        return $response;
     }
 }
